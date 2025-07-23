@@ -163,6 +163,10 @@ const generateRandomNode = (
   const height = getRandomSize(30, Math.min(parentHeight, 100));
   const x = getRandomCoord(parentWidth - width);
   const y = getRandomCoord(parentHeight - height);
+  const divColors = ["white", "#C9DBBA", "#D8E2DC", "#F5EFED"];
+  const buttonColors = ["#A0B9C6", "#8EA8C3", "#23395B", "#0E1428"];
+  const imageColors = ["#E1E6E1", "#AFAFDC", "#DBF9F4"];
+  const inputColors = ["white", "#F4FFF8"];
 
   const node: Node = {
     id: getRandomId(type.toLowerCase()),
@@ -172,32 +176,78 @@ const generateRandomNode = (
     y: parentY + y,
     width,
     height,
-    background: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+    background:
+      type === "Div"
+        ? divColors[Math.floor(Math.random() * divColors.length)]
+        : type === "Button"
+        ? buttonColors[Math.floor(Math.random() * buttonColors.length)]
+        : type === "Image"
+        ? imageColors[Math.floor(Math.random() * imageColors.length)]
+        : type === "Input"
+        ? inputColors[Math.floor(Math.random() * inputColors.length)]
+        : `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+    border: Math.random() > 0.5 ? undefined : "1px solid bg-gray-100",
     children: [],
   };
 
   if (type === "Button" || type === "Div" || type === "Input") {
-    node.color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+    node.color =
+      type === "Button"
+        ? buttonColors[Math.floor(Math.random() * buttonColors.length)]
+        : type === "Div"
+        ? divColors[Math.floor(Math.random() * divColors.length)]
+        : type === "Input"
+        ? inputColors[Math.floor(Math.random() * inputColors.length)]
+        : `#${Math.floor(Math.random() * 16777215).toString(16)}`;
     if (type === "Button" || type === "Input") {
       node.text = `${type} ${Math.random().toString(36).substring(2, 5)}`;
     }
   }
 
   // Recursively generate children, limit depth to 3 for now
-  if (level < MAX_LEVELS && Math.random() > 0.5) {
-    // 50% chance to have children
+  if (level < MAX_LEVELS && Math.random() > 0.5 && type !== "Input") {
     const numChildren = getRandomSize(1, 3);
+    let currentX = 0;
+    let currentY = 0;
+
     for (let i = 0; i < numChildren; i++) {
-      node.children.push(
-        generateRandomNode(
-          node.id,
-          node.x,
-          node.y,
-          node.width,
-          node.height,
-          level + 1
-        )
+      const childType = getRandomNodeType();
+      const childWidth = getRandomSize(
+        100,
+        Math.min(node.width - currentX, 400)
       );
+      const childHeight = getRandomSize(
+        30,
+        Math.min(node.height - currentY, 100)
+      );
+
+      if (childWidth <= 0 || childHeight <= 0) {
+        // Not enough space for another child
+        break;
+      }
+
+      const childNode = generateRandomNode(
+        node.id,
+        node.x + currentX,
+        node.y + currentY,
+        childWidth,
+        childHeight,
+        level + 1
+      );
+      node.children.push(childNode);
+
+      currentX += childWidth + 10; // Add some spacing
+
+      if (currentX + 50 > node.width) {
+        // If next element won't fit, move to next row
+        currentX = 0;
+        currentY += childHeight + 10; // Add some spacing
+      }
+
+      if (currentY + 30 > node.height) {
+        // Not enough vertical space for another row
+        break;
+      }
     }
   }
 
@@ -239,7 +289,7 @@ export const generateRandomMockData = (): Node => {
     y: 0,
     width: rootWidth,
     height: rootHeight,
-    background: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+    background: `white`,
     children: [],
   };
 

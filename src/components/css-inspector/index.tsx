@@ -23,18 +23,21 @@ import {
 } from "./state";
 import { useSelector } from "@legendapp/state/react";
 import { StyleProperty } from "./state/state";
-import { getComponentMap } from "@/home/state";
+import { getComponentMap, initialize, pushStackNode } from "@/home/state";
+import { SquareArrowOutUpRight } from "lucide-react";
 
 interface CSSInspectorProps {
   selectedNode: Node | null;
   onStyleUpdate: (nodeId: string, styles: Record<string, string>) => void;
   onShowToast: (message: string) => void;
+  onConfirmOverride: (message: string) => Promise<boolean>;
 }
 
 export function CSSInspector({
   selectedNode,
   onStyleUpdate,
   onShowToast,
+  onConfirmOverride,
 }: CSSInspectorProps) {
   const styles = useSelector(getStyles);
   const newPropertyKey = useSelector(getNewPropertyKey);
@@ -72,7 +75,7 @@ export function CSSInspector({
     onStyleUpdate(currentSelectedNode.id, { [key]: processedValue });
   };
 
-  const addNewProperty = () => {
+  const addNewProperty = async () => {
     if (!currentSelectedNode || !newPropertyKey || !newPropertyValue) return;
 
     const existingStyle = styles.find(
@@ -80,7 +83,17 @@ export function CSSInspector({
     );
 
     if (existingStyle) {
-      onShowToast(`Property "${newPropertyKey}" already exists.`);
+      const shouldOverride = await onConfirmOverride(
+        `Property "${newPropertyKey}" already exists. Do you want to override it?`
+      );
+
+      if (shouldOverride) {
+        updateStyleAction(newPropertyKey, newPropertyValue);
+        onStyleUpdate(currentSelectedNode.id, {
+          [newPropertyKey]: newPropertyValue,
+        });
+        resetNewPropertyFields();
+      }
       return;
     }
 
@@ -105,6 +118,10 @@ export function CSSInspector({
     onStyleUpdate(currentSelectedNode.id, { [key]: "" });
   };
 
+  const openComponentNode = () => {
+    pushStackNode(currentSelectedNode);
+  };
+
   if (!currentSelectedNode) {
     return (
       <div className="p-4 text-center text-gray-500">
@@ -121,13 +138,23 @@ export function CSSInspector({
         </h3>
         <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
           ID: {currentSelectedNode.id}
-          {componentLabel && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
-              {componentLabel}
-            </span>
-          )}
         </div>
       </div>
+      {componentLabel && (
+        <div className="mb-4">
+          <h4 className="text-sm font-medium text-gray-700 pb-1">Component</h4>
+          <div className="flex flex-row gap-2 items-center text-xs text-gray-600 bg-blue-50 p-2 rounded">
+            {componentLabel && (
+              <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
+                {componentLabel}
+              </span>
+            )}
+            <div onClick={openComponentNode}>
+              <SquareArrowOutUpRight className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         <h4 className="text-sm font-medium text-gray-700 border-b pb-1">

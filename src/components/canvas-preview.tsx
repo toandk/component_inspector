@@ -146,7 +146,7 @@ export function CanvasPreview({
   onNodeSelect,
 }: CanvasPreviewProps) {
   return (
-    <div className="relative w-full h-full min-h-[600px] bg-white m-4 border border-gray-300 rounded-lg overflow-auto">
+    <div className="relative w-full h-full min-h-[600px] bg-gray-100 m-4 border border-gray-300 rounded-lg overflow-auto">
       <NodeRenderer
         key={node.id}
         node={node}

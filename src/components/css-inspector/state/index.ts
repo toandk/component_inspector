@@ -85,10 +85,6 @@ export function setNewPropertyKeyAndFilterSuggestions(key: string) {
   );
   cssInspectorState.filteredPropertySuggestions.set(filtered);
   cssInspectorState.isShowingSuggestions.set(true);
-  console.log("setNewPropertyKeyAndFilterSuggestions", {
-    key,
-    filtered,
-  });
 }
 
 export function selectSuggestedProperty(property: StyleProperty) {

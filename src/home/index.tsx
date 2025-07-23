@@ -19,7 +19,10 @@ import {
   handleUpdateNode,
   showToast,
   hideToast,
+  getStackNodes,
+  popStackNode,
 } from "./state";
+import { ArrowLeft } from "lucide-react";
 
 export default function Home() {
   useEffect(() => {
@@ -32,6 +35,7 @@ export default function Home() {
   const isToastVisible = useSelector(getIsToastVisible);
   const componentMap = useSelector(getComponentMap);
   const selectedNode = useSelector(getSelectedNode);
+  const stackNodes = useSelector(getStackNodes);
 
   if (!nodes.children) return null;
 
@@ -39,7 +43,12 @@ export default function Home() {
     <div className="h-screen flex bg-gray-100">
       {/* Tree View Panel */}
       <div className="w-80 bg-white border-r border-gray-300 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 flex items-center gap-2 flex-row">
+          {stackNodes.length > 1 && (
+            <button onClick={() => popStackNode()}>
+              <ArrowLeft />
+            </button>
+          )}
           <h2 className="text-lg font-semibold text-gray-800">Elements Tree</h2>
         </div>
         <div className="flex-1 overflow-auto">
@@ -78,6 +87,9 @@ export default function Home() {
             selectedNode={selectedNode}
             onStyleUpdate={handleUpdateNode}
             onShowToast={showToast}
+            onConfirmOverride={async (message: string) => {
+              return window.confirm(message);
+            }}
           />
         </div>
       </div>

@@ -8,4 +8,5 @@ export const state = observable({
   toastMessage: "" as string,
   isToastVisible: false as boolean,
   componentMap: new Map<string, string[]>() as Map<string, string[]>,
+  stackNodes: [] as Node[],
 });

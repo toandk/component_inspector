@@ -4,11 +4,8 @@ import type { Node } from "../../types/node";
 import { computed } from "@legendapp/state";
 
 export function initialize(mockNodes: Node = generateRandomMockData()) {
-  state.nodes.set(mockNodes);
-  state.selectedNodeId.set(null);
-  state.toastMessage.set("");
-  state.isToastVisible.set(false);
-  state.componentMap.set(findSimilarComponents(mockNodes));
+  setNodes(mockNodes);
+  state.stackNodes.set([mockNodes]);
 }
 
 // Selectors
@@ -38,9 +35,34 @@ export function getSelectedNode() {
   return selectedNodeId ? findNodeById(nodes, selectedNodeId) : null;
 }
 
+export function getStackNodes() {
+  return state.stackNodes.get();
+}
+
 // Actions
+export function setNodes(nodes: Node) {
+  state.nodes.set(nodes);
+  state.selectedNodeId.set(null);
+  state.toastMessage.set("");
+  state.isToastVisible.set(false);
+  state.componentMap.set(findSimilarComponents(nodes));
+}
+
 export function setSelectedNodeId(id: string | null) {
   state.selectedNodeId.set(id);
+}
+
+export function pushStackNode(node: Node) {
+  setNodes(node);
+  state.stackNodes.set([...state.stackNodes.get(), node]);
+}
+
+export function popStackNode() {
+  const stackNodes = state.stackNodes.get();
+  if (stackNodes.length > 1) {
+    setNodes(stackNodes[stackNodes.length - 2]);
+    state.stackNodes.set(stackNodes.slice(0, -1));
+  }
 }
 
 export function updateNodeById(

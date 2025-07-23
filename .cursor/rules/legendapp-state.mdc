@@ -1,0 +1,99 @@
+---
+description: Legend App State
+globs: *.tsx, *.jsx, *.ts, *.js
+alwaysApply: false
+---
+# LegendApp State Management Guidelines
+
+## State Organization
+
+1. **Component-Level State Structure**
+   - If the component hasn't had its own folder, create a new one
+   - Create a `state` folder inside component directories for component-specific state
+   - Example structure for component-level state:
+   ```
+   components/
+   ├── product-table/
+   │   ├── index.tsx       # Main component
+   │   ├── state/
+   │   │   ├── state.ts    # Core state definitions
+   │   │   └── index.ts    # Selectors and actions
+   ```
+
+2. **State File Organization**
+   - `state.ts`: Contains the core state definitions
+   ```typescript
+   import { observable } from "@legendapp/state";
+   
+   export const state = observable({
+     temporaryModelIds: [] as string[],
+     // other state properties
+   });
+   ```
+   
+   - `index.ts`: Contains selectors and actions
+   ```typescript
+   // Selectors
+   export function getTemporaryModelIds() {
+     return state.temporaryModelIds.get();
+   }
+   
+   // Actions
+   export function setTemporaryModelIds(modelIds: string[]) {
+     state.temporaryModelIds.set(modelIds);
+   }
+   ```
+
+## Usage in Components
+
+1. **Accessing State**
+   - Use `useSelector` hook to access state values
+   ```typescript
+   import { useSelector } from "@legendapp/state/react";
+   
+   const MyComponent = () => {
+     const messages = useSelector(chatState.getChatMessages);
+     // Use messages in your component
+   }
+   ```
+
+2. **State Updates**
+   - Call action functions to update state
+   - Actions can trigger updates in multiple state modules
+
+## State initialize
+
+Each state file could have `initialize` function. This function is optional.
+But if it have this function, the `initialize` function should always put at the begining of the file.
+
+## State Communication
+
+1. **Cross-Module Updates**
+   - State modules can communicate by importing and calling actions from other modules
+   - Example from header state:
+   ```typescript
+   import { updateCurrentSession } from "../chat/state";
+   
+   export function setTemporaryModelIds(modelIds: string[], isUpdateCurrentSession = true) {
+     state.temporaryModelIds.set(modelIds);
+     if (isUpdateCurrentSession) {
+       updateCurrentSession({ model: modelIds });
+     }
+   }
+   ```
+
+2. **Best Practices**
+   - Keep state modules focused and single-responsibility
+   - Use clear naming for selectors (get*) and actions (set*, update*, etc.)
+   - Document dependencies between state modules
+   - Consider using TypeScript for better type safety
+
+## Performance Considerations
+
+1. **Selective Updates**
+   - Use specific selectors to prevent unnecessary re-renders
+   - Only subscribe to the state you need
+   
+2. **Memoization**
+   - Use React.memo for components that depend on state
+   - Memoize complex selectors if needed

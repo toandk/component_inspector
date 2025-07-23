@@ -11,6 +11,7 @@ export type Node = {
   background?: string;
   color?: string;
   border?: string;
+  borderRadius?: string;
   children: Node[];
 };
 

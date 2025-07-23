@@ -29,6 +29,32 @@ export function getComponentMap() {
   return state.componentMap.get();
 }
 
+export function getComponentList() {
+  const componentMap = state.componentMap.get();
+  const components: Array<{
+    id: string;
+    name: string;
+    instances: number;
+    nodeIds: string[];
+  }> = [];
+
+  componentMap.forEach((nodeIds, componentId) => {
+    // Get the first node to determine the component name
+    const nodes = state.nodes.get();
+    const firstNode = findNodeById(nodes, nodeIds[0]);
+    const componentName = firstNode?.name || `Component ${componentId}`;
+
+    components.push({
+      id: componentId,
+      name: componentName,
+      instances: nodeIds.length,
+      nodeIds: nodeIds,
+    });
+  });
+
+  return components.sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function getSelectedNode() {
   const selectedNodeId = state.selectedNodeId.get();
   const nodes = state.nodes.get();
@@ -37,6 +63,14 @@ export function getSelectedNode() {
 
 export function getStackNodes() {
   return state.stackNodes.get();
+}
+
+export function getActiveTab() {
+  return state.activeTab.get();
+}
+
+export function getHighlightedComponentId() {
+  return state.highlightedComponentId.get();
 }
 
 // Actions
@@ -104,4 +138,12 @@ export function showToast(message: string) {
 export function hideToast() {
   state.isToastVisible.set(false);
   state.toastMessage.set("");
+}
+
+export function setActiveTab(tab: "css-inspector" | "components") {
+  state.activeTab.set(tab);
+}
+
+export function setHighlightedComponentId(componentId: string | null) {
+  state.highlightedComponentId.set(componentId);
 }

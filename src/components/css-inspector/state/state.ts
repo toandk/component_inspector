@@ -14,11 +14,13 @@ export const cssInspectorState = observable({
   selectedNode: null as Node | null,
   filteredPropertySuggestions: [] as StyleProperty[],
   isShowingSuggestions: false,
+  activelyEditingProperties: new Set<string>(), // Track which properties are being actively edited
 });
 
 export const cssPropertySuggestions: StyleProperty[] = [
   { propertyKey: "background", value: "", label: "background" },
   { propertyKey: "border", value: "", label: "border" },
+  { propertyKey: "borderRadius", value: "", label: "borderRadius" },
   { propertyKey: "color", value: "", label: "color" },
   { propertyKey: "display", value: "", label: "display" },
   { propertyKey: "display", value: "block", label: "display: block" },

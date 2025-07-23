@@ -40,6 +40,11 @@ export function initializeCssInspectorState(selectedNode: any | null) {
         label: "Border",
       },
       {
+        propertyKey: "borderRadius",
+        value: selectedNode.borderRadius || "",
+        label: "Border Radius",
+      },
+      {
         propertyKey: "display",
         value: selectedNode.display || "",
         label: "Display",
@@ -56,12 +61,64 @@ export function initializeCssInspectorState(selectedNode: any | null) {
   }
 }
 
+export function syncNodeChanges(selectedNode: any | null) {
+  if (!selectedNode) return;
+
+  // Update existing styles with current node values
+  cssInspectorState.styles.set((prev) =>
+    prev.map((style) => {
+      switch (style.propertyKey) {
+        case "x":
+          return { ...style, value: selectedNode.x.toString() };
+        case "y":
+          return { ...style, value: selectedNode.y.toString() };
+        case "width":
+          return { ...style, value: selectedNode.width.toString() };
+        case "height":
+          return { ...style, value: selectedNode.height.toString() };
+        case "background":
+          return { ...style, value: selectedNode.background || "" };
+        case "color":
+          return { ...style, value: selectedNode.color || "" };
+        case "border":
+          return { ...style, value: selectedNode.border || "" };
+        case "borderRadius":
+          return { ...style, value: selectedNode.borderRadius || "" };
+        case "display":
+          return { ...style, value: selectedNode.display || "" };
+        case "text":
+          return { ...style, value: selectedNode.text || "" };
+        default:
+          return style;
+      }
+    })
+  );
+}
+
 export function updateStyle(key: string, value: string) {
   cssInspectorState.styles.set((prev) =>
     prev.map((style) =>
       style.propertyKey === key ? { ...style, value } : style
     )
   );
+}
+
+export function addActivelyEditingProperty(key: string) {
+  const currentSet = cssInspectorState.activelyEditingProperties.get();
+  const newSet = new Set(currentSet);
+  newSet.add(key);
+  cssInspectorState.activelyEditingProperties.set(newSet);
+}
+
+export function removeActivelyEditingProperty(key: string) {
+  const currentSet = cssInspectorState.activelyEditingProperties.get();
+  const newSet = new Set(currentSet);
+  newSet.delete(key);
+  cssInspectorState.activelyEditingProperties.set(newSet);
+}
+
+export function clearActivelyEditingProperties() {
+  cssInspectorState.activelyEditingProperties.set(new Set());
 }
 
 export function addProperty(newProperty: StyleProperty) {
@@ -133,4 +190,8 @@ export function getNewPropertyValue() {
 
 export function getSelectedNode() {
   return cssInspectorState.selectedNode.get();
+}
+
+export function getActivelyEditingProperties() {
+  return cssInspectorState.activelyEditingProperties.get();
 }

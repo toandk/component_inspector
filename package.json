@@ -12,6 +12,7 @@
     "@vitejs/plugin-react-swc": "^3.11.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.525.0",
+    "node-fetch": "^3.3.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.0",
@@ -34,7 +35,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "extract-figma": "node scripts/extract-figma.js"
   },
   "eslintConfig": {
     "extends": [

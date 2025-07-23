@@ -248,7 +248,7 @@ export function TreeView({
         expandedNodeIds={expandedNodeIds} // Pass the set to the root node
         toggleExpand={toggleExpand}
       />
-      {stackNodes.length === 1 && (
+      {/* {stackNodes.length === 1 && (
         <div className="mt-4 p-2">
           <button
             onClick={() => initialize()}
@@ -257,7 +257,7 @@ export function TreeView({
             Generate mock data
           </button>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

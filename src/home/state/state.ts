@@ -9,4 +9,6 @@ export const state = observable({
   isToastVisible: false as boolean,
   componentMap: new Map<string, string[]>() as Map<string, string[]>,
   stackNodes: [] as Node[],
+  activeTab: "css-inspector" as "css-inspector" | "components",
+  highlightedComponentId: null as string | null,
 });

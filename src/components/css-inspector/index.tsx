@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import type { Node } from "../../types/node";
 import {
   initializeCssInspectorState,
+  syncNodeChanges,
   updateStyle as updateStyleAction,
   addProperty as addPropertyAction,
   removeProperty as removePropertyAction,
@@ -20,6 +21,10 @@ import {
   setNewPropertyKeyAndFilterSuggestions,
   selectSuggestedProperty,
   setIsShowingSuggestions,
+  addActivelyEditingProperty,
+  removeActivelyEditingProperty,
+  clearActivelyEditingProperties,
+  getActivelyEditingProperties,
 } from "./state";
 import { useSelector } from "@legendapp/state/react";
 import { StyleProperty } from "./state/state";
@@ -47,6 +52,7 @@ export function CSSInspector({
     getFilteredPropertySuggestions
   );
   const isShowingSuggestions = useSelector(getIsShowingSuggestions);
+  const activelyEditingProperties = useSelector(getActivelyEditingProperties);
   const componentMap = useSelector(getComponentMap);
 
   const componentLabel = currentSelectedNode
@@ -57,8 +63,12 @@ export function CSSInspector({
 
   useEffect(() => {
     if (selectedNode?.id !== currentSelectedNode?.id) {
+      clearActivelyEditingProperties(); // Clear when switching nodes
       setSelectedNode(selectedNode);
       initializeCssInspectorState(selectedNode);
+    } else if (selectedNode && currentSelectedNode) {
+      // Same node, but check if properties have changed
+      syncNodeChanges(selectedNode);
     }
   }, [selectedNode, currentSelectedNode]);
 
@@ -79,24 +89,31 @@ export function CSSInspector({
     if (!currentSelectedNode || !newPropertyKey || !newPropertyValue) return;
 
     const existingStyle = styles.find(
-      (style) => style.propertyKey === newPropertyKey && style.value !== ""
+      (style) => style.propertyKey === newPropertyKey
     );
 
     if (existingStyle) {
-      const shouldOverride = await onConfirmOverride(
-        `Property "${newPropertyKey}" already exists. Do you want to override it?`
-      );
+      // If property exists and has a value, ask for confirmation
+      if (existingStyle.value !== "") {
+        const shouldOverride = await onConfirmOverride(
+          `Property "${newPropertyKey}" already exists. Do you want to override it?`
+        );
 
-      if (shouldOverride) {
-        updateStyleAction(newPropertyKey, newPropertyValue);
-        onStyleUpdate(currentSelectedNode.id, {
-          [newPropertyKey]: newPropertyValue,
-        });
-        resetNewPropertyFields();
+        if (!shouldOverride) {
+          return;
+        }
       }
+
+      // Update existing property
+      updateStyleAction(newPropertyKey, newPropertyValue);
+      onStyleUpdate(currentSelectedNode.id, {
+        [newPropertyKey]: newPropertyValue,
+      });
+      resetNewPropertyFields();
       return;
     }
 
+    // Add new property only if it doesn't exist
     const newStyle: StyleProperty = {
       propertyKey: newPropertyKey,
       value: newPropertyValue,
@@ -115,6 +132,7 @@ export function CSSInspector({
     if (!currentSelectedNode) return;
 
     removePropertyAction(key);
+    removeActivelyEditingProperty(key); // Clear from actively editing state
     onStyleUpdate(currentSelectedNode.id, { [key]: "" });
   };
 
@@ -149,7 +167,11 @@ export function CSSInspector({
                 {componentLabel}
               </span>
             )}
-            <div onClick={openComponentNode}>
+            <div
+              onClick={openComponentNode}
+              title="Click to view Component detail"
+              className="cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
+            >
               <SquareArrowOutUpRight className="w-4 h-4" />
             </div>
           </div>
@@ -162,7 +184,11 @@ export function CSSInspector({
         </h4>
 
         {styles
-          .filter((style) => style.value !== "")
+          .filter(
+            (style) =>
+              style.value !== "" ||
+              activelyEditingProperties.has(style.propertyKey)
+          )
           .map((style) => (
             <div key={style.propertyKey} className="flex flex-col space-y-1">
               <div className="flex items-center justify-between">
@@ -185,6 +211,24 @@ export function CSSInspector({
                     : "text"
                 }
                 value={style.value}
+                onFocus={() => addActivelyEditingProperty(style.propertyKey)}
+                onBlur={(e) => {
+                  // Use timeout to allow user to return to editing quickly
+                  setTimeout(() => {
+                    // Only remove from actively editing if the value is still empty
+                    // and the input is not currently focused
+                    const currentStyles = getStyles();
+                    const currentStyle = currentStyles.find(
+                      (s) => s.propertyKey === style.propertyKey
+                    );
+                    if (
+                      currentStyle?.value === "" &&
+                      document.activeElement !== e.target
+                    ) {
+                      removeActivelyEditingProperty(style.propertyKey);
+                    }
+                  }, 300); // 300ms grace period
+                }}
                 onChange={(e) =>
                   handleStyleChange(style.propertyKey, e.target.value)
                 }

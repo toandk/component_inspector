@@ -4,9 +4,15 @@ import { useEffect } from "react";
 import { useSelector } from "@legendapp/state/react";
 import { TreeView } from "../components/tree-view";
 import { CanvasPreview } from "../components/canvas-preview";
-import { CSSInspector } from "@/components/css-inspector";
+import { RightPanel } from "@/components/right-panel";
 import { Toast } from "../components/toast";
-import { mockNodes } from "../lib/mock-data";
+import { FigmaImporter } from "../components/figma-importer";
+import {
+  loginUIData,
+  mockNodes,
+  mockNodesWithOverlap,
+  mockNodes2,
+} from "../lib/mock-data";
 import {
   initialize,
   getNodes,
@@ -21,12 +27,15 @@ import {
   hideToast,
   getStackNodes,
   popStackNode,
+  setNodes,
+  getHighlightedComponentId,
 } from "./state";
 import { ArrowLeft } from "lucide-react";
+import type { Node } from "../types/node";
 
 export default function Home() {
   useEffect(() => {
-    initialize(mockNodes);
+    initialize(loginUIData);
   }, []);
 
   const nodes = useSelector(getNodes);
@@ -34,10 +43,20 @@ export default function Home() {
   const toastMessage = useSelector(getToastMessage);
   const isToastVisible = useSelector(getIsToastVisible);
   const componentMap = useSelector(getComponentMap);
-  const selectedNode = useSelector(getSelectedNode);
   const stackNodes = useSelector(getStackNodes);
+  const highlightedComponentId = useSelector(getHighlightedComponentId);
 
-  if (!nodes.children) return null;
+  const handleFigmaImport = (importedNodes: Node) => {
+    setNodes(importedNodes);
+    showToast("Figma nodes imported successfully!");
+  };
+
+  if (!nodes.children)
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-100">
+        <FigmaImporter onNodesImported={handleFigmaImport} />
+      </div>
+    );
 
   return (
     <div className="h-screen flex bg-gray-100">
@@ -51,6 +70,11 @@ export default function Home() {
           )}
           <h2 className="text-lg font-semibold text-gray-800">Elements Tree</h2>
         </div>
+
+        {/* Figma Import Section */}
+        {/* <div className="p-4 border-b border-gray-200">
+          <FigmaImporter onNodesImported={handleFigmaImport} />
+        </div> */}
         <div className="flex-1 overflow-auto">
           <TreeView
             node={nodes}
@@ -68,31 +92,20 @@ export default function Home() {
             Canvas Preview
           </h2>
         </div>
-        <div className="flex-1 overflow-auto bg-gray-50">
+        <div className="flex-1 overflow-hidden bg-gray-50">
           <CanvasPreview
             node={nodes}
             selectedNodeId={selectedNodeId}
             onNodeSelect={setSelectedNodeId}
+            onNodeUpdate={handleUpdateNode}
+            highlightedComponentId={highlightedComponentId}
+            componentMap={componentMap}
           />
         </div>
       </div>
 
-      {/* CSS Inspector Panel */}
-      <div className="w-80 bg-white border-l border-gray-300 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">CSS Inspector</h2>
-        </div>
-        <div className="flex-1 overflow-auto">
-          <CSSInspector
-            selectedNode={selectedNode}
-            onStyleUpdate={handleUpdateNode}
-            onShowToast={showToast}
-            onConfirmOverride={async (message: string) => {
-              return window.confirm(message);
-            }}
-          />
-        </div>
-      </div>
+      {/* Right Panel with Tabs */}
+      <RightPanel />
       <Toast
         message={toastMessage}
         isVisible={isToastVisible}

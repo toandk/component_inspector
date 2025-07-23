@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { ComponentInfo, Node } from "@/types/node";
 
-const MAX_LEVELS = 5;
+const MAX_LEVELS = 10;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -159,14 +159,14 @@ const generateRandomNode = (
   level: number
 ): Node => {
   const type = getRandomNodeType();
-  const width = getRandomSize(50, Math.min(parentWidth, 300));
+  const width = getRandomSize(100, Math.min(parentWidth, 300));
   const height = getRandomSize(30, Math.min(parentHeight, 100));
   const x = getRandomCoord(parentWidth - width);
   const y = getRandomCoord(parentHeight - height);
-  const divColors = ["white", "#C9DBBA", "#D8E2DC", "#F5EFED"];
-  const buttonColors = ["#A0B9C6", "#8EA8C3", "#23395B", "#0E1428"];
-  const imageColors = ["#E1E6E1", "#AFAFDC", "#DBF9F4"];
-  const inputColors = ["white", "#F4FFF8"];
+  const divColors = ["white", "#FAFDF6", "#D8E2DC", "#F5EFED"];
+  const buttonColors = ["#5D4E6D", "#2D2A32", "#23395B", "#0E1428"];
+  const imageColors = ["white"];
+  const inputColors = ["white", "#EDF2F4"];
 
   const node: Node = {
     id: getRandomId(type.toLowerCase()),
@@ -186,7 +186,7 @@ const generateRandomNode = (
         : type === "Input"
         ? inputColors[Math.floor(Math.random() * inputColors.length)]
         : `#${Math.floor(Math.random() * 16777215).toString(16)}`,
-    border: Math.random() > 0.5 ? undefined : "1px solid bg-gray-100",
+    border: "1px solid #f3f4f6",
     children: [],
   };
 
@@ -203,27 +203,52 @@ const generateRandomNode = (
       node.text = `${type} ${Math.random().toString(36).substring(2, 5)}`;
     }
   }
+  if (type === "Input") {
+    node.color = "#000000";
+    node.border = "1px solid #f3f4f6";
+  }
+  if (type === "Button") {
+    node.color = "#ffffff";
+  }
 
-  // Recursively generate children, limit depth to 3 for now
-  if (level < MAX_LEVELS && Math.random() > 0.5 && type !== "Input") {
+  // Recursively generate children with non-overlapping layout
+  if (level < MAX_LEVELS && Math.random() > 0.3 && type !== "Input") {
     const numChildren = getRandomSize(1, 3);
-    let currentX = 0;
-    let currentY = 0;
+    const padding = 10; // Minimum spacing between elements
+    let currentX = padding;
+    let currentY = padding;
+    let rowHeight = 0;
 
     for (let i = 0; i < numChildren; i++) {
       const childType = getRandomNodeType();
-      const childWidth = getRandomSize(
-        100,
-        Math.min(node.width - currentX, 400)
-      );
-      const childHeight = getRandomSize(
-        30,
-        Math.min(node.height - currentY, 100)
-      );
 
-      if (childWidth <= 0 || childHeight <= 0) {
+      // Calculate available space
+      const availableWidth = node.width - currentX - padding;
+      const availableHeight = node.height - currentY - padding;
+
+      // Generate reasonable child dimensions based on available space
+      const maxChildWidth = Math.min(availableWidth, 300);
+      const maxChildHeight = Math.min(availableHeight, 150);
+
+      if (maxChildWidth < 50 || maxChildHeight < 30) {
         // Not enough space for another child
         break;
+      }
+
+      const childWidth = getRandomSize(50, maxChildWidth);
+      const childHeight = getRandomSize(30, maxChildHeight);
+
+      // Check if child fits in current row
+      if (currentX + childWidth + padding > node.width) {
+        // Move to next row
+        currentX = padding;
+        currentY += rowHeight + padding;
+        rowHeight = 0;
+
+        // Check if we have enough vertical space for new row
+        if (currentY + childHeight + padding > node.height) {
+          break;
+        }
       }
 
       const childNode = generateRandomNode(
@@ -236,18 +261,9 @@ const generateRandomNode = (
       );
       node.children.push(childNode);
 
-      currentX += childWidth + 10; // Add some spacing
-
-      if (currentX + 50 > node.width) {
-        // If next element won't fit, move to next row
-        currentX = 0;
-        currentY += childHeight + 10; // Add some spacing
-      }
-
-      if (currentY + 30 > node.height) {
-        // Not enough vertical space for another row
-        break;
-      }
+      // Update positioning for next child
+      currentX += childWidth + padding;
+      rowHeight = Math.max(rowHeight, childHeight);
     }
   }
 

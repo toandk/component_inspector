@@ -2,6 +2,8 @@ import {
   cssInspectorState,
   StyleProperty,
   cssPropertySuggestions,
+  cssValueSuggestions,
+  EditingState,
 } from "./state";
 
 // Actions
@@ -12,61 +14,83 @@ export function initializeCssInspectorState(selectedNode: any | null) {
         propertyKey: "x",
         value: selectedNode.x.toString(),
         label: "X Position",
+        enabled: true,
       },
       {
         propertyKey: "y",
         value: selectedNode.y.toString(),
         label: "Y Position",
+        enabled: true,
       },
       {
         propertyKey: "width",
         value: selectedNode.width.toString(),
         label: "Width",
+        enabled: true,
       },
       {
         propertyKey: "height",
         value: selectedNode.height.toString(),
         label: "Height",
+        enabled: true,
       },
       {
         propertyKey: "background",
         value: selectedNode.background || "",
         label: "Background",
+        enabled: selectedNode.background ? true : false,
       },
-      { propertyKey: "color", value: selectedNode.color || "", label: "Color" },
+      {
+        propertyKey: "color",
+        value: selectedNode.color || "",
+        label: "Color",
+        enabled: selectedNode.color ? true : false,
+      },
       {
         propertyKey: "border",
         value: selectedNode.border || "",
         label: "Border",
+        enabled: selectedNode.border ? true : false,
       },
       {
-        propertyKey: "borderRadius",
+        propertyKey: "border-radius",
         value: selectedNode.borderRadius || "",
         label: "Border Radius",
+        enabled: selectedNode.borderRadius ? true : false,
       },
       {
         propertyKey: "display",
         value: selectedNode.display || "",
         label: "Display",
+        enabled: selectedNode.display ? true : false,
       },
       {
         propertyKey: "text",
         value: selectedNode.text || "",
         label: "Text Content",
+        enabled: selectedNode.text ? true : false,
       },
     ];
     cssInspectorState.styles.set(nodeStyles);
   } else {
     cssInspectorState.styles.set([]);
   }
+  // Clear editing states when initializing
+  cssInspectorState.editingStates.set(new Map());
+  cssInspectorState.insertLineIndex.set(-1);
 }
 
 export function syncNodeChanges(selectedNode: any | null) {
   if (!selectedNode) return;
 
-  // Update existing styles with current node values
+  // Update existing styles with current node values, but preserve disabled style values
   cssInspectorState.styles.set((prev) =>
     prev.map((style) => {
+      // If style is disabled and has a value, keep the existing value
+      if (!style.enabled && style.value !== "") {
+        return style;
+      }
+
       switch (style.propertyKey) {
         case "x":
           return { ...style, value: selectedNode.x.toString() };
@@ -82,7 +106,7 @@ export function syncNodeChanges(selectedNode: any | null) {
           return { ...style, value: selectedNode.color || "" };
         case "border":
           return { ...style, value: selectedNode.border || "" };
-        case "borderRadius":
+        case "border-radius":
           return { ...style, value: selectedNode.borderRadius || "" };
         case "display":
           return { ...style, value: selectedNode.display || "" };
@@ -101,6 +125,99 @@ export function updateStyle(key: string, value: string) {
       style.propertyKey === key ? { ...style, value } : style
     )
   );
+}
+
+export function toggleStyleEnabled(key: string) {
+  cssInspectorState.styles.set((prev) =>
+    prev.map((style) =>
+      style.propertyKey === key ? { ...style, enabled: !style.enabled } : style
+    )
+  );
+}
+
+export function updateStyleProperty(
+  key: string,
+  newKey: string,
+  value: string
+) {
+  cssInspectorState.styles.set((prev) =>
+    prev.map((style) =>
+      style.propertyKey === key
+        ? { ...style, propertyKey: newKey, value, label: newKey }
+        : style
+    )
+  );
+}
+
+// Inline editing functions
+export function startEditing(propertyKey: string, field: "key" | "value") {
+  const currentStates = cssInspectorState.editingStates.get();
+  const currentValue =
+    field === "key"
+      ? propertyKey
+      : cssInspectorState.styles
+          .get()
+          .find((s) => s.propertyKey === propertyKey)?.value || "";
+
+  const newStates = new Map(currentStates);
+  newStates.set(propertyKey, {
+    isEditing: true,
+    field,
+    tempValue: currentValue,
+  });
+  cssInspectorState.editingStates.set(newStates);
+}
+
+export function stopEditing(propertyKey: string) {
+  const currentStates = cssInspectorState.editingStates.get();
+  const newStates = new Map(currentStates);
+  newStates.delete(propertyKey);
+  cssInspectorState.editingStates.set(newStates);
+}
+
+export function updateEditingValue(propertyKey: string, value: string) {
+  const currentStates = cssInspectorState.editingStates.get();
+  const currentState = currentStates.get(propertyKey);
+  if (currentState) {
+    const newStates = new Map(currentStates);
+    newStates.set(propertyKey, { ...currentState, tempValue: value });
+    cssInspectorState.editingStates.set(newStates);
+  }
+}
+
+export function commitEdit(propertyKey: string) {
+  const currentStates = cssInspectorState.editingStates.get();
+  const editingState = currentStates.get(propertyKey);
+
+  if (editingState) {
+    if (editingState.field === "key") {
+      // Update property key
+      updateStyleProperty(
+        propertyKey,
+        editingState.tempValue,
+        cssInspectorState.styles
+          .get()
+          .find((s) => s.propertyKey === propertyKey)?.value || ""
+      );
+    } else if (editingState.field === "value") {
+      // Update property value
+      updateStyle(propertyKey, editingState.tempValue);
+    }
+    stopEditing(propertyKey);
+  }
+}
+
+export function setInsertLineIndex(index: number) {
+  cssInspectorState.insertLineIndex.set(index);
+}
+
+export function addPropertyAtIndex(property: StyleProperty, index: number) {
+  cssInspectorState.styles.set((prev) => {
+    const newStyles = [...prev];
+    newStyles.splice(index, 0, property);
+    return newStyles;
+  });
+  cssInspectorState.insertLineIndex.set(-1);
 }
 
 export function addActivelyEditingProperty(key: string) {
@@ -142,6 +259,14 @@ export function setNewPropertyKeyAndFilterSuggestions(key: string) {
   );
   cssInspectorState.filteredPropertySuggestions.set(filtered);
   cssInspectorState.isShowingSuggestions.set(true);
+}
+
+export function getValueSuggestions(propertyKey: string, input: string = "") {
+  const suggestions = cssValueSuggestions[propertyKey] || [];
+  if (!input) return suggestions;
+  return suggestions.filter((value) =>
+    value.toLowerCase().includes(input.toLowerCase())
+  );
 }
 
 export function selectSuggestedProperty(property: StyleProperty) {
@@ -194,4 +319,12 @@ export function getSelectedNode() {
 
 export function getActivelyEditingProperties() {
   return cssInspectorState.activelyEditingProperties.get();
+}
+
+export function getEditingStates() {
+  return cssInspectorState.editingStates.get();
+}
+
+export function getInsertLineIndex() {
+  return cssInspectorState.insertLineIndex.get();
 }

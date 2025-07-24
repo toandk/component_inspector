@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   fetchFigmaFile,
   convertFigmaToNodes,
@@ -13,14 +13,50 @@ interface FigmaImporterProps {
   onNodesImported?: (nodes: Node) => void;
 }
 
+const FIGMA_ACCESS_TOKEN_KEY = "figma_access_token";
+const FIGMA_URL_KEY = "figma_url";
+
 export function FigmaImporter({ onNodesImported }: FigmaImporterProps) {
   const [figmaUrl, setFigmaUrl] = useState(
-    "https://www.figma.com/file/ke1dWVjPq5BfQgYbG1R4iw/Untitled?node-id=298-11104&t=fGAgYKdCrW0FoFwl-4"
+    "https://www.figma.com/file/toTAFBJUPniZap9EPmhHWg/Untitled?node-id=0-8&t=2iL6qNo8pnxyGgus-4"
   );
   const [accessToken, setAccessToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [extractedNodes, setExtractedNodes] = useState<Node | null>(null);
+
+  // Load saved data from localStorage on component mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem(FIGMA_ACCESS_TOKEN_KEY);
+    const savedUrl = localStorage.getItem(FIGMA_URL_KEY);
+
+    if (savedToken) {
+      setAccessToken(savedToken);
+    }
+    if (savedUrl) {
+      setFigmaUrl(savedUrl);
+    }
+  }, []);
+
+  // Save access token to localStorage whenever it changes
+  const handleAccessTokenChange = (newToken: string) => {
+    setAccessToken(newToken);
+    if (newToken) {
+      localStorage.setItem(FIGMA_ACCESS_TOKEN_KEY, newToken);
+    } else {
+      localStorage.removeItem(FIGMA_ACCESS_TOKEN_KEY);
+    }
+  };
+
+  // Save Figma URL to localStorage whenever it changes
+  const handleFigmaUrlChange = (newUrl: string) => {
+    setFigmaUrl(newUrl);
+    if (newUrl) {
+      localStorage.setItem(FIGMA_URL_KEY, newUrl);
+    } else {
+      localStorage.removeItem(FIGMA_URL_KEY);
+    }
+  };
 
   const handleImport = async () => {
     if (!figmaUrl || !accessToken) {
@@ -40,6 +76,7 @@ export function FigmaImporter({ onNodesImported }: FigmaImporterProps) {
 
       // Convert to Node structure
       const nodes = convertFigmaToNodes(figmaData);
+      console.log("extractedNodes", nodes);
 
       setExtractedNodes(nodes);
 
@@ -84,7 +121,7 @@ export function FigmaImporter({ onNodesImported }: FigmaImporterProps) {
             id="figma-url"
             type="text"
             value={figmaUrl}
-            onChange={(e) => setFigmaUrl(e.target.value)}
+            onChange={(e) => handleFigmaUrlChange(e.target.value)}
             placeholder="https://www.figma.com/file/..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -101,7 +138,7 @@ export function FigmaImporter({ onNodesImported }: FigmaImporterProps) {
             id="access-token"
             type="password"
             value={accessToken}
-            onChange={(e) => setAccessToken(e.target.value)}
+            onChange={(e) => handleAccessTokenChange(e.target.value)}
             placeholder="Your Figma personal access token"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />

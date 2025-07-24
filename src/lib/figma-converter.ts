@@ -31,6 +31,8 @@ interface FigmaNode {
   }>;
   strokeWeight?: number;
   characters?: string;
+  cornerRadius?: number;
+  rectangleCornerRadii?: number[];
   children?: FigmaNode[];
 }
 
@@ -92,6 +94,10 @@ function convertFigmaNodeToNode(
     height: 100,
   };
 
+  // Calculate relative position within parent
+  const relativeX = boundingBox.x - parentX;
+  const relativeY = boundingBox.y - parentY;
+
   // Extract background color from fills
   let background = undefined;
   if (figmaNode.fills && figmaNode.fills.length > 0) {
@@ -119,7 +125,22 @@ function convertFigmaNodeToNode(
     }
   }
 
-  // Convert children recursively
+  // Extract border radius
+  let borderRadius = undefined;
+  if (figmaNode.cornerRadius !== undefined) {
+    // Single corner radius for all corners
+    borderRadius = `${figmaNode.cornerRadius}px`;
+  } else if (
+    figmaNode.rectangleCornerRadii &&
+    figmaNode.rectangleCornerRadii.length === 4
+  ) {
+    // Individual corner radii [topLeft, topRight, bottomRight, bottomLeft]
+    const [topLeft, topRight, bottomRight, bottomLeft] =
+      figmaNode.rectangleCornerRadii;
+    borderRadius = `${topLeft}px ${topRight}px ${bottomRight}px ${bottomLeft}px`;
+  }
+
+  // Convert children recursively - pass this node's absolute position as parent coordinates
   const children: Node[] = [];
   if (figmaNode.children) {
     for (const child of figmaNode.children) {
@@ -133,12 +154,20 @@ function convertFigmaNodeToNode(
     id: figmaNode.id,
     name: figmaNode.name,
     type: mapFigmaTypeToNodeType(figmaNode.type),
-    x: boundingBox.x,
-    y: boundingBox.y,
+    x: relativeX,
+    y: relativeY,
     width: boundingBox.width,
     height: boundingBox.height,
-    background,
+    background:
+      figmaNode.characters && figmaNode.characters.length > 0
+        ? null
+        : background,
+    color:
+      figmaNode.characters && figmaNode.characters.length > 0
+        ? background
+        : null,
     border,
+    borderRadius,
     text: figmaNode.characters,
     children,
   };
@@ -169,11 +198,25 @@ export async function fetchFigmaFile(
 
 // Extract file ID from Figma URL
 export function extractFileIdFromUrl(figmaUrl: string): string {
-  const match = figmaUrl.match(/\/file\/([a-zA-Z0-9]+)/);
+  // Support both /file/<file-id> and /design/<file-id> formats
+  // The file ID is the alphanumeric string after /file/ or /design/
+  const match = figmaUrl.match(/\/(file|design)\/([a-zA-Z0-9]+)/);
   if (!match) {
-    throw new Error("Invalid Figma URL");
+    throw new Error(
+      `Invalid Figma URL format. Expected URL with /file/<id> or /design/<id>. Got: ${figmaUrl}`
+    );
   }
-  return match[1];
+
+  const fileId = match[2];
+
+  // Validate that we're not returning the format type as the file ID
+  if (fileId === "file" || fileId === "design") {
+    throw new Error(
+      `Invalid file ID extracted. The file ID should not be 'file' or 'design'. URL: ${figmaUrl}`
+    );
+  }
+
+  return fileId;
 }
 
 // Save nodes to JSON file

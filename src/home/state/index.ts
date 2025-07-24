@@ -69,6 +69,10 @@ export function getActiveTab() {
   return state.activeTab.get();
 }
 
+export function getLeftPanelTab() {
+  return state.leftPanelTab.get();
+}
+
 export function getHighlightedComponentId() {
   return state.highlightedComponentId.get();
 }
@@ -142,6 +146,10 @@ export function hideToast() {
 
 export function setActiveTab(tab: "css-inspector" | "components") {
   state.activeTab.set(tab);
+}
+
+export function setLeftPanelTab(tab: "element-tree" | "figma-importer") {
+  state.leftPanelTab.set(tab);
 }
 
 export function setHighlightedComponentId(componentId: string | null) {

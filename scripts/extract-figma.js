@@ -5,7 +5,7 @@ const path = require("path");
 
 // Configuration
 const FIGMA_URL =
-  "https://www.figma.com/design/45fDulQfk18qBsAsq89oI7/T%C3%ADnh-n%C4%83ng-Gapo?node-id=2-291016&t=pxTxCv36YJ4NTT3a-4";
+  "https://www.figma.com/file/toTAFBJUPniZap9EPmhHWg/Untitled?node-id=0-8&t=2iL6qNo8pnxyGgus-4";
 const FIGMA_ACCESS_TOKEN = process.env.FIGMA_ACCESS_TOKEN || ""; // Set this environment variable
 
 // Helper function to convert RGB to hex
@@ -46,6 +46,10 @@ function convertFigmaNodeToNode(figmaNode, parentX = 0, parentY = 0) {
     height: 100,
   };
 
+  // Calculate relative position within parent
+  const relativeX = boundingBox.x - parentX;
+  const relativeY = boundingBox.y - parentY;
+
   // Extract background color from fills
   let background = undefined;
   if (figmaNode.fills && figmaNode.fills.length > 0) {
@@ -73,7 +77,7 @@ function convertFigmaNodeToNode(figmaNode, parentX = 0, parentY = 0) {
     }
   }
 
-  // Convert children recursively
+  // Convert children recursively - pass this node's absolute position as parent coordinates
   const children = [];
   if (figmaNode.children) {
     for (const child of figmaNode.children) {
@@ -87,12 +91,13 @@ function convertFigmaNodeToNode(figmaNode, parentX = 0, parentY = 0) {
     id: figmaNode.id,
     name: figmaNode.name,
     type: mapFigmaTypeToNodeType(figmaNode.type),
-    x: boundingBox.x,
-    y: boundingBox.y,
+    x: relativeX,
+    y: relativeY,
     width: boundingBox.width,
     height: boundingBox.height,
     background,
     border,
+    borderRadius: figmaNode.cornerRadius || figmaNode.rectangleCornerRadii,
     text: figmaNode.characters,
     children,
   };
@@ -144,6 +149,7 @@ async function main() {
     // Fetch Figma file data
     const figmaData = await fetchFigmaFile(fileId, FIGMA_ACCESS_TOKEN);
     console.log(`Fetched file: ${figmaData.name}`);
+    console.log(figmaData);
 
     // Convert to Node structure
     const nodes = convertFigmaNodeToNode(figmaData.document);

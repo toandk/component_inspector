@@ -29,6 +29,8 @@ import {
   popStackNode,
   setNodes,
   getHighlightedComponentId,
+  getLeftPanelTab,
+  setLeftPanelTab,
 } from "./state";
 import { ArrowLeft } from "lucide-react";
 import type { Node } from "../types/node";
@@ -45,10 +47,13 @@ export default function Home() {
   const componentMap = useSelector(getComponentMap);
   const stackNodes = useSelector(getStackNodes);
   const highlightedComponentId = useSelector(getHighlightedComponentId);
+  const leftPanelTab = useSelector(getLeftPanelTab);
 
   const handleFigmaImport = (importedNodes: Node) => {
     setNodes(importedNodes);
     showToast("Figma nodes imported successfully!");
+    // Switch to Element Tree tab after successful import
+    // setLeftPanelTab("element-tree");
   };
 
   if (!nodes.children)
@@ -62,26 +67,56 @@ export default function Home() {
     <div className="h-screen flex bg-gray-100">
       {/* Tree View Panel */}
       <div className="w-80 bg-white border-r border-gray-300 flex flex-col">
+        {/* Header with back button */}
         <div className="p-4 border-b border-gray-200 flex items-center gap-2 flex-row">
           {stackNodes.length > 1 && (
             <button onClick={() => popStackNode()}>
               <ArrowLeft />
             </button>
           )}
-          <h2 className="text-lg font-semibold text-gray-800">Elements Tree</h2>
+          <h2 className="text-lg font-semibold text-gray-800">Left Panel</h2>
         </div>
 
-        {/* Figma Import Section */}
-        {/* <div className="p-4 border-b border-gray-200">
-          <FigmaImporter onNodesImported={handleFigmaImport} />
-        </div> */}
+        {/* Segmented Tabs */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setLeftPanelTab("element-tree")}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                leftPanelTab === "element-tree"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Element Tree
+            </button>
+            <button
+              onClick={() => setLeftPanelTab("figma-importer")}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                leftPanelTab === "figma-importer"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Figma Importer
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
         <div className="flex-1 overflow-auto">
-          <TreeView
-            node={nodes}
-            componentMap={componentMap}
-            selectedNodeId={selectedNodeId}
-            onNodeSelect={setSelectedNodeId}
-          />
+          {leftPanelTab === "element-tree" ? (
+            <TreeView
+              node={nodes}
+              componentMap={componentMap}
+              selectedNodeId={selectedNodeId}
+              onNodeSelect={setSelectedNodeId}
+            />
+          ) : (
+            <div className="p-4">
+              <FigmaImporter onNodesImported={handleFigmaImport} />
+            </div>
+          )}
         </div>
       </div>
 

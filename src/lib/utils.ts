@@ -25,11 +25,11 @@ class ComponentDetector {
   ): string {
     const nodeSignature = {
       type: node.type,
-      width: node.width,
-      height: node.height,
+      // width: node.width,
+      // height: node.height,
       display: node.display,
       // color: node.color,
-      border: node.border,
+      // border: node.border,
       // For component detection, ignore positioning, background, and text content at all levels
       // This allows components to be positioned differently and have different content
       // but still be recognized as the same structural pattern

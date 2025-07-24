@@ -10,5 +10,6 @@ export const state = observable({
   componentMap: new Map<string, string[]>() as Map<string, string[]>,
   stackNodes: [] as Node[],
   activeTab: "css-inspector" as "css-inspector" | "components",
+  leftPanelTab: "element-tree" as "element-tree" | "figma-importer",
   highlightedComponentId: null as string | null,
 });
